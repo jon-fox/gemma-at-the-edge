@@ -6,3 +6,12 @@ testing openweight google gemma models on edge devices
 https://www.kaggle.com/models/google/gemma-4
 
 https://gemma-llm.readthedocs.io/en/latest/checkpoints.html
+
+
+```python
+import kagglehub
+
+kagglehub.login()
+
+weights_dir = kagglehub.model_download("google/gemma-4/transformers/gemma-4-26b-a4b")
+```
