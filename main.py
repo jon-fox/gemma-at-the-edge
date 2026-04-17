@@ -6,10 +6,6 @@ MODEL_PATH = kagglehub.model_download("google/gemma-4/transformers/gemma-4-e4b")
 
 # Load model
 processor = AutoProcessor.from_pretrained(MODEL_PATH)
-processor.chat_template = (
-    "{% for m in messages %}<|turn>{{ m['role'] }}\n{{ m['content'] }}<turn|>{% endfor %}"
-    "{% if add_generation_prompt %}<|turn>assistant\n{% endif %}"
-)
 model = AutoModelForCausalLM.from_pretrained(
     MODEL_PATH,
     dtype=torch.bfloat16,
@@ -17,19 +13,15 @@ model = AutoModelForCausalLM.from_pretrained(
 )
 
 def main():
-    # Prompt
+    # Prompt — manually formatted for Gemma 4 (model package is missing chat template)
     messages = [
         {"role": "system", "content": "You are a helpful assistant."},
         {"role": "user", "content": "Write a short joke about saving RAM."},
     ]
+    text = "<bos>" + "".join(
+        f"<|turn>{m['role']}\n{m['content']}<turn|>\n" for m in messages
+    ) + "<|turn>assistant\n"
 
-    # Process input
-    text = processor.apply_chat_template(
-        messages, 
-        tokenize=False, 
-        add_generation_prompt=True, 
-        enable_thinking=False
-    )
     inputs = processor(text=text, return_tensors="pt").to(model.device)
     input_len = inputs["input_ids"].shape[-1]
 
