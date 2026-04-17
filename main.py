@@ -12,23 +12,40 @@ model = AutoModelForCausalLM.from_pretrained(
     device_map="mps"
 )
 
-def main():
-    # Prompt — manually formatted for Gemma 4 (model package is missing chat template)
-    messages = [
-        {"role": "system", "content": "You are a helpful assistant."},
-        {"role": "user", "content": "Write a short joke about saving RAM."},
-    ]
-    text = "<bos>" + "".join(
+def format_prompt(messages):
+    return "<bos>" + "".join(
         f"<|turn>{m['role']}\n{m['content']}<turn|>\n" for m in messages
     ) + "<|turn>assistant\n"
 
-    inputs = processor(text=text, return_tensors="pt").to(model.device)
-    input_len = inputs["input_ids"].shape[-1]
 
-    # Generate output
-    outputs = model.generate(**inputs, max_new_tokens=1024)
-    response = processor.decode(outputs[0][input_len:], skip_special_tokens=False)
-    print(response)
+def main():
+    messages = [{"role": "system", "content": "You are a helpful assistant."}]
+    print("Gemma 4 chat. Type 'exit' or Ctrl-D to quit, 'reset' to clear history.\n")
+
+    while True:
+        try:
+            user_input = input("you> ").strip()
+        except (EOFError, KeyboardInterrupt):
+            print()
+            break
+        if not user_input:
+            continue
+        if user_input.lower() in {"exit", "quit"}:
+            break
+        if user_input.lower() == "reset":
+            messages = messages[:1]
+            print("(history cleared)\n")
+            continue
+
+        messages.append({"role": "user", "content": user_input})
+        inputs = processor(text=format_prompt(messages), return_tensors="pt").to(model.device)
+        input_len = inputs["input_ids"].shape[-1]
+
+        outputs = model.generate(**inputs, max_new_tokens=1024)
+        reply = processor.decode(outputs[0][input_len:], skip_special_tokens=True)
+        reply = reply.split("<turn|>")[0].strip()
+        print(f"gemma> {reply}\n")
+        messages.append({"role": "assistant", "content": reply})
 
 
 
