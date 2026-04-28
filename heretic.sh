@@ -21,4 +21,3 @@ else
     echo "No existing model found, running abliteration..."
     heretic --model openai/gpt-oss-20b --trust-remote-code true --device-map cuda:0 --dtypes '["bfloat16"]'
 fi
-
